@@ -1,0 +1,21 @@
+name: Build PUBG Mod 4.5
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download UnrealPak
+        run: |
+          wget -q https://github.com/EpicGames/UnrealEngine/releases/download/4.27/UnrealPak-Linux -O UnrealPak
+          chmod +x UnrealPak
+      - name: Prepare directories
+        run: |
+          mkdir -p PatchContent/ShadowTrackerExtra/Content/Script/UI
+          cp UI_Ingame.lua PatchContent/ShadowTrackerExtra/Content/Script/UI/
+      - name: Pack .pak
+        run: ./UnrealPak game_patch_4.5.0.21392.pak -Create=PatchContent -compress
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ryzen-mod
+          path: game_patch_4.5.0.21392.pak
