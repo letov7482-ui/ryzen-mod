@@ -15,8 +15,8 @@ jobs:
           chmod +x u4pak.py
       - name: Prepare directories
         run: |
-          mkdir -p PatchContent/ShadowTrackerExtra/Content/Script/UI
-          cp UI_Ingame.lua PatchContent/ShadowTrackerExtra/Content/Script/UI/
+          mkdir -p PatchContent/ShadowTrackerExtra/Content/Script
+          cp init.lua PatchContent/ShadowTrackerExtra/Content/Script/
       - name: Pack .pak with u4pak.py
         run: |
           cd PatchContent
