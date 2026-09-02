@@ -1,7 +1,7 @@
 -- ============================================================
---               RYZEN ULTIMATE MOD v4.5 (Anti-Ban)
+--               RYZEN ULTIMATE ESP v2.1 (Anti-Ban)
 -- ============================================================
--- Автосоздание конфига ryzen.cfg, если его нет
+-- Дистанция теперь под ногами, + все фичи
 -- ============================================================
 
 local OFFSETS = {
@@ -18,11 +18,14 @@ local CONFIG_PATH = "/sdcard/Android/data/com.tencent.ig/files/UE4Game/ShadowTra
 
 local function createDefaultConfig()
     local default = [[esp = true
-aim = true
-aim_key = 2
+aim = false
+show_team = true
+show_hp = true
+show_grenade = true
 box_color = 00FF00
 line_color = FF0000
 dist_color = FFFFFF
+hp_color = 00FF00
 max_dist = 200
 smooth = 5
 fov = 30
@@ -38,7 +41,7 @@ bone = 13
 end
 
 local function loadConfig()
-    local cfg = { esp=true, aim=true, aim_key=2, box_color="00FF00", line_color="FF0000", dist_color="FFFFFF", max_dist=200, smooth=5, fov=30, bone=13 }
+    local cfg = { esp=true, aim=false, show_team=true, show_hp=true, show_grenade=true, box_color="00FF00", line_color="FF0000", dist_color="FFFFFF", hp_color="00FF00", max_dist=200, smooth=5, fov=30, bone=13 }
     local f = io.open(CONFIG_PATH, "r")
     if not f then
         if createDefaultConfig() then
@@ -64,7 +67,6 @@ end
 
 local cfg = loadConfig()
 
--- ===== БЕЗОПАСНОЕ ЧТЕНИЕ ПАМЯТИ =====
 local function readInt(addr)
     local success, val = pcall(UE4.UKismetSystemLibrary.ReadInt, addr)
     return success and val or 0
@@ -106,6 +108,10 @@ local function isVisible(startPos, endPos)
     return not hit.bBlockingHit
 end
 
+local function getAllActorsOfClass(world, class)
+    return UE4.UGameplayStatics.GetAllActorsOfClass(world, class) or {}
+end
+
 local lastUpdate = 0
 local lastConfigRead = 0
 
@@ -119,7 +125,7 @@ local function RyzenTick(deltaTime)
         lastConfigRead = now
     end
 
-    if not cfg.esp and not cfg.aim then return end
+    if not cfg.esp then return end
 
     local world = UE4.UKismetSystemLibrary.GetGameWorld()
     if not world then return end
@@ -130,7 +136,8 @@ local function RyzenTick(deltaTime)
     local myPos = myPawn:GetActorLocation()
     local myTeam = myPawn.TeamID or 0
 
-    local actors = UE4.UGameplayStatics.GetAllActorsOfClass(world, UE4.ASTExtraPlayerCharacter)
+    -- ===== ИГРОКИ =====
+    local actors = getAllActorsOfClass(world, UE4.ASTExtraPlayerCharacter)
     for _, pawn in ipairs(actors) do
         if pawn and pawn ~= myPawn then
             local health = pawn.Health
@@ -148,40 +155,83 @@ local function RyzenTick(deltaTime)
                                     local headScreen = worldToScreen(headPos)
                                     local rootScreen = worldToScreen(rootPos)
                                     if headScreen and rootScreen and headScreen.z > 0.1 then
-                                        if cfg.esp then
-                                            local height = rootScreen.y - headScreen.y
-                                            local width = height * 0.45
-                                            UE4.UKismetSystemLibrary.DrawBox(
-                                                headScreen.x - width/2, headScreen.y,
-                                                width, height, cfg.box_color or "00FF00"
-                                            )
-                                            UE4.UKismetSystemLibrary.DrawLine(
-                                                headScreen.x, headScreen.y, rootScreen.x, rootScreen.y,
-                                                cfg.line_color or "FF0000"
-                                            )
+                                        -- БОКС
+                                        local height = rootScreen.y - headScreen.y
+                                        local width = height * 0.45
+                                        UE4.UKismetSystemLibrary.DrawBox(
+                                            headScreen.x - width/2, headScreen.y,
+                                            width, height, cfg.box_color or "00FF00"
+                                        )
+                                        UE4.UKismetSystemLibrary.DrawLine(
+                                            headScreen.x, headScreen.y, rootScreen.x, rootScreen.y,
+                                            cfg.line_color or "FF0000"
+                                        )
+                                        -- ДИСТАНЦИЯ ПОД НОГАМИ
+                                        UE4.UKismetSystemLibrary.DrawText(
+                                            rootScreen.x, rootScreen.y + 15,
+                                            string.format("%.1fm", dist),
+                                            cfg.dist_color or "FFFFFF"
+                                        )
+                                        -- КОМАНДА
+                                        if cfg.show_team then
                                             UE4.UKismetSystemLibrary.DrawText(
-                                                headScreen.x, headScreen.y - 20,
-                                                string.format("%.1fm", dist),
-                                                cfg.dist_color or "FFFFFF"
+                                                headScreen.x - 10, headScreen.y - 40,
+                                                "T" .. tostring(team),
+                                                "#FFFF00"
                                             )
                                         end
-                                        if cfg.aim then
-                                            if UE4.UKismetSystemLibrary.IsKeyDown(cfg.aim_key or 2) then
-                                                local centerX = UE4.UKismetSystemLibrary.GetScreenSize().X / 2
-                                                local centerY = UE4.UKismetSystemLibrary.GetScreenSize().Y / 2
-                                                local dx = headScreen.x - centerX
-                                                local dy = headScreen.y - centerY
-                                                if math.abs(dx) < (cfg.fov or 30) and math.abs(dy) < (cfg.fov or 30) then
-                                                    local smooth = cfg.smooth or 5
-                                                    local jitterX = (math.random() - 0.5) * 0.5
-                                                    local jitterY = (math.random() - 0.5) * 0.5
-                                                    UE4.UKismetSystemLibrary.AddMouseDelta(dx / smooth + jitterX, dy / smooth + jitterY)
-                                                end
-                                            end
+                                        -- HP BAR
+                                        if cfg.show_hp then
+                                            local hpPercent = health / 100
+                                            local barWidth = 30
+                                            local barX = headScreen.x - barWidth/2
+                                            local barY = headScreen.y - 10
+                                            UE4.UKismetSystemLibrary.DrawBox(barX, barY, barWidth, 4, "#000000")
+                                            local fillWidth = barWidth * hpPercent
+                                            UE4.UKismetSystemLibrary.DrawBox(barX, barY, fillWidth, 4, cfg.hp_color or "00FF00")
                                         end
                                     end
                                 end
                             end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- ===== ГРАНАТЫ =====
+    if cfg.show_grenade then
+        local grenades = getAllActorsOfClass(world, UE4.ASTExtraGrenade)
+        for _, grenade in ipairs(grenades) do
+            if grenade then
+                local pos = grenade:GetActorLocation()
+                local velocity = grenade.Velocity
+                if velocity then
+                    local g = 9.81
+                    local vz = velocity.z
+                    local h = pos.z
+                    local t = (vz + math.sqrt(vz*vz + 2*g*h)) / g
+                    if t > 0 then
+                        local endX = pos.x + velocity.x * t
+                        local endY = pos.y + velocity.y * t
+                        local endPos = {x=endX, y=endY, z=0}
+                        local steps = 10
+                        for i=0, steps-1 do
+                            local frac = i / steps
+                            local frac2 = (i+1) / steps
+                            local p1 = {x=pos.x + velocity.x * frac * t, y=pos.y + velocity.y * frac * t, z=pos.z + velocity.z * frac * t - 0.5*g*(frac*t)^2}
+                            local p2 = {x=pos.x + velocity.x * frac2 * t, y=pos.y + velocity.y * frac2 * t, z=pos.z + velocity.z * frac2 * t - 0.5*g*(frac2*t)^2}
+                            local s1 = worldToScreen(p1)
+                            local s2 = worldToScreen(p2)
+                            if s1 and s2 and s1.z > 0.1 and s2.z > 0.1 then
+                                UE4.UKismetSystemLibrary.DrawLine(s1.x, s1.y, s2.x, s2.y, "#FFA500")
+                            end
+                        end
+                        local centerScreen = worldToScreen(endPos)
+                        if centerScreen and centerScreen.z > 0.1 then
+                            local radiusPixels = 50 * (cfg.max_dist / 100)
+                            UE4.UKismetSystemLibrary.DrawCircle(centerScreen.x, centerScreen.y, radiusPixels, "#FF0000")
                         end
                     end
                 end
