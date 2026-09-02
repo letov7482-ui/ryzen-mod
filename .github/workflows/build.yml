@@ -5,19 +5,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Python and u4pak from GitHub
+      - name: Install Python3
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip git
-          pip3 install git+https://github.com/panzi/u4pak.git
+          sudo apt-get install -y python3
+      - name: Download u4pak.py
+        run: |
+          wget https://raw.githubusercontent.com/panzi/u4pak/master/u4pak.py
+          chmod +x u4pak.py
       - name: Prepare directories
         run: |
           mkdir -p PatchContent/ShadowTrackerExtra/Content/Script/UI
           cp UI_Ingame.lua PatchContent/ShadowTrackerExtra/Content/Script/UI/
-      - name: Pack .pak with u4pak
+      - name: Pack .pak with u4pak.py
         run: |
           cd PatchContent
-          u4pak pack ../game_patch_4.5.0.21392.pak .
+          python3 ../u4pak.py pack ../game_patch_4.5.0.21392.pak .
       - uses: actions/upload-artifact@v4
         with:
           name: ryzen-mod
