@@ -1,4 +1,4 @@
-name: Build PUBG Mod 4.5 (Final)
+name: Build PUBG Mod 4.5 (Paks)
 on: [push, workflow_dispatch]
 jobs:
   build:
@@ -20,8 +20,8 @@ jobs:
       - name: Pack .pak with u4pak.py
         run: |
           cd PatchContent
-          python3 ../u4pak.py pack ../res_pufferpatch_4.5.0.21392.pak .
+          python3 ../u4pak.py pack ../pakchunkEN_9999.pak .
       - uses: actions/upload-artifact@v4
         with:
           name: ryzen-mod
-          path: res_pufferpatch_4.5.0.21392.pak
+          path: pakchunkEN_9999.pak
