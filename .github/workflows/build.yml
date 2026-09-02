@@ -1,4 +1,4 @@
-name: Build PUBG Mod 4.5
+name: Build PUBG Mod 4.5 (init.lua)
 on: [push, workflow_dispatch]
 jobs:
   build:
