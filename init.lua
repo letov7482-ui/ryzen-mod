@@ -1,7 +1,7 @@
 -- ============================================================
---               RYZEN ULTIMATE ESP v2.1 (Anti-Ban)
+--               RYZEN ULTIMATE ESP v2.3 (Anti-Ban)
 -- ============================================================
--- Дистанция теперь под ногами, + все фичи
+-- Теперь через init.lua (не удаляется)
 -- ============================================================
 
 local OFFSETS = {
@@ -14,7 +14,7 @@ local OFFSETS = {
     team = 0x12CC
 }
 
-local CONFIG_PATH = "/sdcard/Android/data/com.tencent.ig/files/UE4Game/ShadowTrackerExtra/ShadowTrackerExtra/Saved/Paks/puffer_temp/ryzen.cfg"
+local CONFIG_PATH = "/sdcard/ryzen.cfg"
 
 local function createDefaultConfig()
     local default = [[esp = true
@@ -136,7 +136,6 @@ local function RyzenTick(deltaTime)
     local myPos = myPawn:GetActorLocation()
     local myTeam = myPawn.TeamID or 0
 
-    -- ===== ИГРОКИ =====
     local actors = getAllActorsOfClass(world, UE4.ASTExtraPlayerCharacter)
     for _, pawn in ipairs(actors) do
         if pawn and pawn ~= myPawn then
@@ -155,7 +154,6 @@ local function RyzenTick(deltaTime)
                                     local headScreen = worldToScreen(headPos)
                                     local rootScreen = worldToScreen(rootPos)
                                     if headScreen and rootScreen and headScreen.z > 0.1 then
-                                        -- БОКС
                                         local height = rootScreen.y - headScreen.y
                                         local width = height * 0.45
                                         UE4.UKismetSystemLibrary.DrawBox(
@@ -166,13 +164,11 @@ local function RyzenTick(deltaTime)
                                             headScreen.x, headScreen.y, rootScreen.x, rootScreen.y,
                                             cfg.line_color or "FF0000"
                                         )
-                                        -- ДИСТАНЦИЯ ПОД НОГАМИ
                                         UE4.UKismetSystemLibrary.DrawText(
                                             rootScreen.x, rootScreen.y + 15,
                                             string.format("%.1fm", dist),
                                             cfg.dist_color or "FFFFFF"
                                         )
-                                        -- КОМАНДА
                                         if cfg.show_team then
                                             UE4.UKismetSystemLibrary.DrawText(
                                                 headScreen.x - 10, headScreen.y - 40,
@@ -180,7 +176,6 @@ local function RyzenTick(deltaTime)
                                                 "#FFFF00"
                                             )
                                         end
-                                        -- HP BAR
                                         if cfg.show_hp then
                                             local hpPercent = health / 100
                                             local barWidth = 30
@@ -200,7 +195,6 @@ local function RyzenTick(deltaTime)
         end
     end
 
-    -- ===== ГРАНАТЫ =====
     if cfg.show_grenade then
         local grenades = getAllActorsOfClass(world, UE4.ASTExtraGrenade)
         for _, grenade in ipairs(grenades) do
